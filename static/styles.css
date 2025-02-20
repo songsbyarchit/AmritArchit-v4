@@ -1,0 +1,57 @@
+body {
+    background-color: #1e1e2e;
+    color: #fff;
+    font-family: 'Arial', sans-serif;
+}
+
+h1 {
+    font-size: 2rem;
+}
+
+.container {
+    max-width: 600px;
+    margin: 50px auto;
+    background: #2b2b3a;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0px 0px 10px rgba(255, 255, 255, 0.1);
+}
+
+.chat-box {
+    background: #3b3b4f;
+    padding: 20px;
+    border-radius: 8px;
+}
+
+input.form-control {
+    background: #444;
+    color: white;
+    border: 1px solid #666;
+}
+
+input.form-control:focus {
+    background: #555;
+    color: white;
+    border-color: #ff5c5c;
+}
+
+.btn-danger {
+    background: #ff5c5c;
+    border: none;
+}
+
+.btn-danger:hover {
+    background: #ff2a2a;
+}
+
+.response-box {
+    background: #222;
+    color: #ff5c5c;
+    border-left: 4px solid #ff5c5c;
+    border-radius: 5px;
+}
+
+.response-text {
+    font-size: 1.1rem;
+    font-style: italic;
+}
