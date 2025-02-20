@@ -52,7 +52,7 @@ def generate_slide_content(topic):
     """
 
     response = openai.ChatCompletion.create(
-        model="gpt-4",
+        model="gpt-3.5-turbo",
         messages=[{"role": "system", "content": "You are an AI that generates structured, engaging, and audience-focused PowerPoint slide content."},
                   {"role": "user", "content": prompt}]
     )
@@ -61,35 +61,58 @@ def generate_slide_content(topic):
     print(f"🤖 OpenAI Response:\n{ai_output}\n")  # Debugging log
     return ai_output
 
-def fetch_image_url(query):
-    """Fetches the first image URL from Google Images using Custom Search API."""
-    GOOGLE_CSE_ID = os.getenv("GOOGLE_CSE_ID")  # Your Custom Search Engine ID
-    GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")  # Your Google API Key
+def generate_image_search_term(slide_title, bullet_points):
+    """Generates a simple and broad search term based on the slide title."""
+    prompt = f"""
+    Given the following PowerPoint slide title, generate a short, broad, and generic Google Image search term that 
+    is likely to return good results. Ignore bullet points to keep it simple.
+    
+    Slide Title: {slide_title}
+
+    The search term should be general, commonly used, and likely to return a variety of relevant images.
+    Keep it under three words. Return only the search term without any additional text.
+    """
+
+    response = openai.ChatCompletion.create(
+        model="gpt-4",
+        messages=[{"role": "system", "content": "You generate simple and generic search terms for Google Images."},
+                  {"role": "user", "content": prompt}]
+    )
+
+    search_term = response["choices"][0]["message"]["content"].strip()
+    print(f"🔍 Simplified Search Term: {search_term}")
+    return search_term
+
+def fetch_image_url(slide_title, bullet_points):
+    """Fetches an image URL using a refined search term from AI with better filtering."""
+    search_term = generate_image_search_term(slide_title, bullet_points)
+
+    GOOGLE_CSE_ID = os.getenv("GOOGLE_CSE_ID")
+    GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
     search_url = "https://www.googleapis.com/customsearch/v1"
 
     params = {
-        "q": query,
+        "q": search_term,
         "cx": GOOGLE_CSE_ID,
         "key": GOOGLE_API_KEY,
         "searchType": "image",
-        "num": 1
+        "num": 5,  # Fetch more images to filter
+        "imgSize": "medium"  # Ensures we get images within acceptable size limits
     }
 
-    print(f"🔍 Searching image for: {query}")
+    print(f"🔍 Searching image for: {search_term}")
     response = requests.get(search_url, params=params)
-    
+
     if response.status_code == 200:
         data = response.json()
         if "items" in data and len(data["items"]) > 0:
-            image_url = data["items"][0]["link"]
-            # Ensure the image is a valid and publicly accessible URL
-            if not image_url.startswith("http"):
-                print("⚠️ Invalid image URL, skipping.")
-                return None
-            print(f"✅ Image found: {image_url}")
-            return image_url  # Return first image URL
-    
-    print("❌ No image found.")
+            for item in data["items"]:
+                image_url = item["link"]
+                if image_url.startswith("http") and image_url.endswith((".jpg", ".png", ".jpeg")):
+                    print(f"✅ Image found: {image_url}")
+                    return image_url
+
+    print("❌ No valid image found.")
     return None
 
 def create_presentation(topic):
@@ -161,7 +184,7 @@ def add_slides(presentation_id, slides_content):
             })
 
         # Fetch an image URL for the slide title
-        image_url = fetch_image_url(slide_title.split(": ", 1)[-1])  # Remove "Slide X: " prefix
+        image_url = fetch_image_url(slide_title, bullet_points)
         if image_url and image_url.startswith("http"):
             print(f"🖼️ Adding image to slide '{slide_title}': {image_url}")
             requests.append({
